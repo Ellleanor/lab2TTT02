@@ -68,7 +68,7 @@ static void buddy_init_memmp(struct Page* base,size_t n){
 
     for(int i=0;i<2*real_need_size-1;i++){
         if(IS_POWER_OF_2(i+1)){
-            node_size/2;
+            node_size /=2;
         }
         buddy->longest[i] = node_size;
     }
@@ -152,7 +152,7 @@ buddy_free_pages(struct Page *base, size_t n) {
     }
 
     if(!self){
-        return NULL;
+        return;
     }
 
 
