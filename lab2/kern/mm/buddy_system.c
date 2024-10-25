@@ -38,7 +38,6 @@ static void buddy_init(){
 
 static void buddy_init_memmp(struct Page* base,size_t n){
     assert(n > 0);
-    cprintf("n: %d\n", n);
     
     
 
