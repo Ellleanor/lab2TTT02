@@ -193,6 +193,8 @@ buddy_free_pages(struct Page *base, size_t n) {
 
 static size_t
 buddy_nr_free_pages(void) {        //返回剩余的空闲的页数
+
+    nr_free = 0;
     
     for(int i=0;i<MAX_SIZE; i++){
         nr_free += multi_buddy[i].free_size;
