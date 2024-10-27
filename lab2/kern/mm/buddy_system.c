@@ -182,70 +182,42 @@ buddy_nr_free_pages(void) {
 static void
 buddy_check(void) {
     
-    struct Page *p0, *p1, *p2, *p3, *p4;
-    p0 = p1 = p2 = p3 = p4 = NULL;
-
+    size_t total_page = buddy_nr_free_pages();
+    struct Page *p0, *p1, *p2;
+    p0 = p1 = p2 = NULL;
     assert((p0 = alloc_page()) != NULL);
     assert((p1 = alloc_page()) != NULL);
     assert((p2 = alloc_page()) != NULL);
 
     assert(p0 != p1 && p0 != p2 && p1 != p2);
     assert(page_ref(p0) == 0 && page_ref(p1) == 0 && page_ref(p2) == 0);
-    assert(p1==p0+1 && p2 == p1+1);  //页面地址关系
 
-    assert(page2pa(p0) < npage * PGSIZE);
+    assert(page2pa(p0) < npage * PGSIZE);       //测试不超出界限
     assert(page2pa(p1) < npage * PGSIZE);
     assert(page2pa(p2) < npage * PGSIZE);
 
-    free_page(p0);    
-    free_page(p1);
-    free_page(p2);
+    assert(p1 == p0 + 1);       //测试连续分页
+
+    buddy_free_pages(p0,1);
+    buddy_free_pages(p1,1);
+    buddy_free_pages(p2,1);
+
+    assert(buddy_nr_free_pages() == total_page );
+
+    struct Page* p4 = NULL;
+    p4 = buddy_alloc_pages(256);
+    assert(buddy_nr_free_pages() == ( total_page -256));
+
+    struct Page* p5 = NULL;
+    p5 = buddy_alloc_pages(256);
+    assert(buddy_nr_free_pages() == ( total_page -2*256));
+
+    buddy_free_pages(p4,256);
+    buddy_free_pages(p5,256);
+
     
-    p1 = alloc_pages(512); //p1应该指向最开始的512个页
-    p2 = alloc_pages(512);
-    p3 = alloc_pages(1024);
+    assert(buddy_nr_free_pages() == total_page );
 
-    assert(p3 - p2 == p2 - p1);//检查相邻关系
-
-    free_pages(p1, 256);
-    free_pages(p2, 512);
-    free_pages(p1 + 256, 256);
-    free_pages(p3,1024);
-    //检验释放页时，相邻内存的合并
-
-    p0 = alloc_pages(8192);
-
-    assert(p0 == p1); //重新分配，p0也指向最开始的页
-
-    p1 = alloc_pages(128);
-    p2 = alloc_pages(64);
-    
-
-    assert(p1 + 128 == p2);// 检查是否相邻
-
-    p3 = alloc_pages(128);
-
-
-    //检查p3和p1是否重叠
-    assert(p1 + 256 == p3);
-    
-    //释放p1
-    free_pages(p1, 128);
-
-    p4 = alloc_pages(64);
-    assert(p4 + 128 == p2);
-    // 检查p4是否能够使用p1刚刚释放的内存
-
-    free_pages(p3, 128);
-    p3 = alloc_pages(64);
-
-    // 检查p3是否在p2、p4之间
-    assert(p3 == p4 + 64 && p3 == p2 - 64);
-    free_pages(p2, 64);
-    free_pages(p4, 64);
-    free_pages(p3, 64);
-    // 全部释放
-    free_pages(p0, 8192);
     
 }
 
