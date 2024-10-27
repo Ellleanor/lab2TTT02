@@ -60,7 +60,7 @@ static void buddy_init_memmp(struct Page* base,size_t n){
 
     buddy.free_size = real_need_size;
 
-    buddy.longest = base ;         //开头放二叉树结构
+    buddy.longest = (uintptr_t*)base ;         //开头放二叉树结构
 
     buddy.begin_page->property = n;
 
