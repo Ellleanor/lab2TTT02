@@ -17,15 +17,13 @@ struct buddy
 }buddy;
 
 static size_t up_power_of_2(size_t n){
-    int n = 0, tmp = size;
-    while (tmp >>= 1)
-    {
-        n++;
-    }
-    n += 1;
-    return (1 << n);
-};
-
+    n |= n >> 1;
+    n |= n >> 2;
+    n |= n >> 4;
+    n |= n >> 8;
+    n |= n >> 16;
+    return n+1;
+}
 
 static void buddy_init(){
     list_init(&free_list);
@@ -33,18 +31,12 @@ static void buddy_init(){
 }
 
 static void buddy_init_memmp(struct Page* base,size_t n){
+    
     assert(n > 0);
-
 
     size_t real_need_size = up_power_of_2(n);
 
     buddy.begin_page = base;
-
-    if(n<512){
-        buddy.manage_page_used = 1;
-    } else{
-        buddy.manage_page_used = (real_need_size*sizeof(uintptr_t)*2+PGSIZE - 1)/PGSIZE;
-    }
 
     struct Page* page = buddy.begin_page;
 
@@ -57,16 +49,16 @@ static void buddy_init_memmp(struct Page* base,size_t n){
 
     buddy.size = real_need_size;
 
-    buddy.free_size = real_need_size;
+    buddy.free_size = n;
 
-    buddy.longest = (uintptr_t*)(base + real_need_size);         //结尾放二叉树结构
+    buddy.longest = (uintptr_t*)(base + n);         //结尾放二叉树结构
 
     base->property = n;
 
     
     size_t node_size = real_need_size*2;
 
-    for(int i=0;i<2*real_need_size-1;i++){
+    for(int i=0;i<2*real_need_size-1;++i){
         if(IS_POWER_OF_2(i+1)){
             node_size /= 2;
         }
