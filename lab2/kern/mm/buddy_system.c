@@ -38,14 +38,12 @@ static void buddy_init_memmp(struct Page* base,size_t n){
 
     size_t real_need_size = up_power_of_2(n);
 
+    buddy.begin_page = base;
+
     if(n<512){
         buddy.manage_page_used = 1;
-        buddy.begin_page = base + buddy.manage_page_used;
-
     } else{
         buddy.manage_page_used = (real_need_size*sizeof(uintptr_t)*2+PGSIZE - 1)/PGSIZE;
-        buddy.begin_page = base + buddy.manage_page_used;
-
     }
 
     struct Page* page = buddy.begin_page;
@@ -61,9 +59,9 @@ static void buddy_init_memmp(struct Page* base,size_t n){
 
     buddy.free_size = real_need_size;
 
-    buddy.longest = (uintptr_t*)base ;         //开头放二叉树结构
+    buddy.longest = (uintptr_t*)(base + real_need_size);         //结尾放二叉树结构
 
-    buddy.begin_page->property = n;
+    base->property = n;
 
     
     size_t node_size = real_need_size*2;
@@ -86,8 +84,7 @@ buddy_alloc_pages(size_t n) {
         return NULL;
     }
 
-    struct Page *page = NULL;
-
+   
     size_t real_apply_size;
     size_t offset = 0;
 
@@ -102,6 +99,7 @@ buddy_alloc_pages(size_t n) {
 
 
     int node_size;
+
     for(node_size = buddy.size ; node_size!= real_apply_size;node_size/2){
         if(buddy.longest[LEFT_LEAF(index)] >= real_apply_size){
             index = LEFT_LEAF(index);
@@ -119,18 +117,23 @@ buddy_alloc_pages(size_t n) {
         buddy.longest[index] = MAX(buddy.longest[LEFT_LEAF(index)],buddy.longest[RIGHT_LEAF(index)]);
     }
 
-    for(page = buddy.begin_page ;page!=buddy.begin_page + real_apply_size;page++)
+
+
+    struct Page *page = NULL;
+    struct Page* base_page = buddy.begin_page + offset;
+
+    for(page = buddy.begin_page + offset ;page!=buddy.begin_page + real_apply_size;page++)
     {
         ClearPageProperty(page);
     }
 
     nr_free -= real_apply_size;
 
-    buddy.begin_page->property = real_apply_size;
+    base_page->property = real_apply_size;
 
     buddy.free_size -= real_apply_size;
 
-    return buddy.begin_page;
+    return base_page;
     
 }
 
@@ -152,12 +155,15 @@ buddy_free_pages(struct Page *base, size_t n) {
 
     index = offset + buddy.size - 1;
 
-    for(; node_size != n ;index = PARENT(index)){
+    while (node_size != n)
+    {
         node_size *=2;
+        index = PARENT(index);
         if(index == 0){
             return;
         }
     }
+    
     
     buddy.longest[index] = node_size;
 
