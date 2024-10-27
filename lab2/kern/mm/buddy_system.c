@@ -52,7 +52,7 @@ static void buddy_init_memmp(struct Page* base,size_t n){
     for (; page != buddy.begin_page + n; page++) {
         assert(PageReserved(page));
         // 清空当前页框的标志和属性信息，并将页框的引用计数设置为0
-        page.flags = page.property = 0;
+        page->flags = page->property = 0;
         set_page_ref(page, 0);
     }
 
